@@ -1,0 +1,15 @@
+# GPU (RTX 50xx needs CUDA 12.8 wheels):
+#   pip install torch --index-url https://download.pytorch.org/whl/cu128
+torch
+sentence-transformers
+bm25s
+PyStemmer
+numpy
+pandas
+pyarrow
+google-genai
+python-dotenv
+tqdm
+fastapi
+uvicorn
+streamlit
