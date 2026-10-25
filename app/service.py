@@ -16,14 +16,15 @@ sys.path.insert(0, str(ROOT))
 
 from src.rag import config  # noqa: E402
 
-EXAMPLES = [
-    "How have US export controls affected Nvidia's AI chip sales to China?",
-    "Why did Klarna start rehiring human customer service agents after its AI push?",
-    "How is generative AI changing radiology and medical imaging?",
-    "What did the EEOC allege in its first lawsuit over AI in hiring?",
-    "AI 对客服和呼叫中心岗位有什么影响?",
-    "What was Apple's Vision Pro revenue in Q3 2027?",  # unanswerable on purpose: shows abstention
-]
+# question -> short label for the UI
+EXAMPLES = {
+    "How have US export controls affected Nvidia's AI chip sales to China?": "Nvidia & export controls",
+    "Why did Klarna start rehiring human customer service agents after its AI push?": "Klarna rehiring humans",
+    "How is generative AI changing radiology and medical imaging?": "AI in radiology",
+    "What did the EEOC allege in its first lawsuit over AI in hiring?": "First AI-hiring lawsuit",
+    "AI 对客服和呼叫中心岗位有什么影响?": "AI 对客服岗位的影响",
+    "What was Apple's Vision Pro revenue in Q3 2027?": "Vision Pro 2027 (not in archive)",  # shows abstention
+}
 
 SNIPPET_CHARS = 320  # the UI shows short excerpts + links, never full articles
 CPU_RERANKER = "cross-encoder/ms-marco-MiniLM-L-6-v2"

@@ -30,7 +30,7 @@ def health():
 
 @app.get("/examples")
 def examples():
-    return {"examples": EXAMPLES, "industries": get_service().industries}
+    return {"examples": list(EXAMPLES), "industries": get_service().industries}
 
 
 @app.post("/ask")
