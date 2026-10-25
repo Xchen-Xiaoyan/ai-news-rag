@@ -81,13 +81,16 @@ class RAGPipeline:
         queries, hits = self.retrieve(question, k=k, decompose=decompose, filters=filters, **search_kw)
         return {"queries": queries, **self.generate(question, hits)}
 
+    @staticmethod
+    def prompt_for(question: str, hits: list[dict]) -> str:
+        return f"Excerpts:\n\n{format_sources(hits)}\n\nQuestion: {question}"
+
     def generate(self, question: str, hits: list[dict]) -> dict:
         """Answer from already-retrieved hits (lets evals retrieve serially and generate in parallel)."""
         if not hits:
             return {"question": question, "answer": NO_ANSWER + " to answer this.",
                     "sources": [], "cited": [], "abstained": True, "llm": self.llm.name}
-        prompt = f"Excerpts:\n\n{format_sources(hits)}\n\nQuestion: {question}"
-        answer = self.llm.generate(self.system, prompt).strip()
+        answer = self.llm.generate(self.system, self.prompt_for(question, hits)).strip()
         return {
             "question": question, "answer": answer, "sources": hits,
             "cited": parse_citations(answer, len(hits)),

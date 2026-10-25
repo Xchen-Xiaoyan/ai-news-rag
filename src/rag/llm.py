@@ -113,8 +113,16 @@ class CachedLLM(LLM):
         self.db.execute("CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, response TEXT)")
         self.lock = threading.Lock()
 
+    def _key(self, system, prompt, temperature):
+        return hashlib.sha256(json.dumps([self.inner.name, system, prompt, temperature]).encode()).hexdigest()
+
+    def contains(self, system, prompt, temperature=0.0) -> bool:
+        with self.lock:
+            return self.db.execute("SELECT 1 FROM cache WHERE key = ?",
+                                   (self._key(system, prompt, temperature),)).fetchone() is not None
+
     def generate(self, system, prompt, temperature=0.0):
-        key = hashlib.sha256(json.dumps([self.inner.name, system, prompt, temperature]).encode()).hexdigest()
+        key = self._key(system, prompt, temperature)
         with self.lock:
             row = self.db.execute("SELECT response FROM cache WHERE key = ?", (key,)).fetchone()
         if row:

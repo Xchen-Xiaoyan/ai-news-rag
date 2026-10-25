@@ -12,7 +12,9 @@ EVAL = config.ROOT / "eval"
 def load_testset(path: Path | None = None) -> list[dict]:
     """Load the final test set if it exists, else the draft with review decisions applied.
 
-    In testset_review.csv, keep = n drops a question; edited question / reference_answer text wins.
+    In testset_review.csv, keep = n drops a question; edited question / reference_answer text wins;
+    type_override changes the question type and gold_keep ("0|1") keeps a subset of gold articles.
+    A "single" question with several gold articles counts a hit if ANY of them is retrieved.
     """
     final = EVAL / "testset.jsonl"
     path = path or (final if final.exists() else EVAL / "testset_draft.jsonl")
@@ -28,6 +30,13 @@ def load_testset(path: Path | None = None) -> list[dict]:
                     continue
                 it["question"] = r.question.strip() or it["question"]
                 it["reference_answer"] = r.reference_answer.strip() or it["reference_answer"]
+                if r.get("type_override", "").strip():
+                    it["type"] = r.type_override.strip()
+                if r.get("gold_keep", "").strip():
+                    keep = [int(x) for x in r.gold_keep.split("|")]
+                    for f in ["gold_doc_ids", "gold_chunk_ids", "gold_titles", "gold_dates"]:
+                        if f in it:
+                            it[f] = [it[f][i] for i in keep]
             out.append(it)
         items = out
     # Hand-written questions (same JSON fields) are appended if present.

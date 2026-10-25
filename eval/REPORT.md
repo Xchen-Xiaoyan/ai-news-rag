@@ -1,84 +1,104 @@
-# Evaluation report (Phase 2)
+# Evaluation report
 
 System: hybrid RAG over 33,234 deduplicated AI-industry news articles (2022-01 to 2026-02),
 188,454 chunks. Everything runs locally at $0 on an RTX 5060 Laptop (8 GB): bge embeddings and
 reranker, `qwen2.5:7b` via Ollama for generation and judging, with a free-tier Gemini model as a
 stronger reference judge on a sample.
 
+All numbers below are on the **reviewed test set (75 questions)** unless marked "pre-review".
+
 ## 1. Test set
 
-96 questions, generated from the 3,024 articles that carry labels from the original topic-modeling
-project, then passed through automatic quality gates (`scripts/filter_testset.py`).
+Questions were generated from the 3,024 articles that carry labels from the original topic-modeling
+project, passed through automatic quality gates, then reviewed question by question.
 
-| Type | Gold label | Kept |
-|---|---|---|
-| single: answerable from one passage | that article | 60 |
-| multi: needs facts from two articles on one topic | both articles | 16 |
-| unanswerable: plausible, but not in the archive (post-2026 events, unpublished internal figures) | should abstain | 20 |
+| Type | Gold label | Draft | After review |
+|---|---|---|---|
+| single: answerable from one passage | that article (any of several, if they cover the same event) | 60 | 50 |
+| multi: needs facts from two articles | both articles | 16 | 9 |
+| unanswerable: post-2026 events, unpublished internal figures, fictional companies | should abstain | 20 | 16 |
 
-Filtering funnel (207 raw candidates; 20 from Gemini, 187 from qwen2.5:7b):
+**Automatic gates** (`scripts/filter_testset.py`, 207 candidates → 96 draft):
 
 | Stage | Dropped | Rule |
 |---|---|---|
 | rules | 18 | mentions "the article/passage", too short, duplicate |
-| critic | 50 | LLM check: question names no concrete entity, or is generic enough that many articles answer it, or the reference answer is not in the gold text, or a "multi" question is answerable from one source |
+| critic | 50 | LLM check: no concrete entity in the question, generic enough that many articles answer it, reference not in the gold text, or a "multi" question answerable from one source |
 | probe | 6 | "unanswerable" questions searched against the real index; dropped if the retrieved excerpts answer them |
 
-Lesson: asking the 7B critic for a 1-5 specificity score failed. It rated 130/130 questions "3", even when
-its own reason said "specific". Replacing the score with binary checks plus examples fixed this.
+Asking the 7B critic for a 1-5 specificity score failed: it rated 130/130 questions "3". Binary checks
+with examples fixed this.
 
-Caveat: LLM-generated questions keep lexical overlap with their source passage, which favors BM25.
-A human pass over `eval/testset_review.csv` (mark `keep = n`, edit text) is still pending.
+**Review** (96 → 75; every decision and reason is in `testset_review.csv`). The review was done by
+an AI assistant (Claude) reading each question against its gold passage. It is not an independent
+human annotation.
 
-## 2. Retrieval (76 answerable questions, no LLM)
+| Problem | Count | Action |
+|---|---|---|
+| Same article as a Gemini-written question (the two generators sampled the same docs) | 9 | drop duplicate |
+| Answer comes from a page sidebar ("trending" list), not the article | 2 | drop |
+| Event-logistics trivia | 1 | drop |
+| "Multi" question where one gold article isn't actually needed, or the link is contrived | 5 | drop |
+| "Multi" question whose two articles cover the same event | 2 | relabel as single (either article counts) |
+| "Unanswerable" forecast question ("By 2028, how will…") that real forecasts in the archive may answer | 4 | drop |
+| Ambiguous wording (e.g. "the day of the outage" when ChatGPT had many) | 3 | rewrite |
 
-Doc-level metrics: the gold article must appear in the top-k results.
+Remaining caveats:
+- LLM-written questions keep lexical overlap with their source passage, which favors BM25.
+- Most unanswerable questions follow two templates ("internal cost per query", "in 2027/2028").
+- n = 9 multi questions is too few for strong conclusions.
+
+## 2. Retrieval (59 answerable questions, doc-level)
 
 | Config | Hit@1 | Hit@5 | Hit@10 | MRR | multi: both docs in top 10 | latency |
 |---|---|---|---|---|---|---|
-| BM25 | 0.711 | 0.895 | 0.908 | 0.791 | 0.50 | 4 ms |
-| Dense (bge-small) | 0.645 | 0.855 | 0.855 | 0.719 | 0.50 | 28 ms |
-| Hybrid (RRF) | 0.711 | **0.934** | **0.961** | 0.804 | 0.44 | 19 ms |
-| BM25 + rerank | 0.776 | 0.908 | 0.947 | 0.839 | 0.50 | 228 ms |
-| Hybrid + rerank (**default**) | 0.776 | 0.908 | 0.947 | 0.839 | 0.50 | 243 ms |
-| Hybrid + rerank, 100-word chunks | **0.803** | 0.921 | 0.947 | **0.858** | 0.44 | 179 ms |
-| Hybrid + rerank, 350-word chunks | 0.737 | 0.895 | 0.921 | 0.804 | 0.50 | 274 ms |
-| Dense (bge-base) | 0.605 | 0.868 | 0.908 | 0.709 | 0.38 | 20 ms |
-| Hybrid + rerank (bge-base) | 0.776 | 0.908 | 0.934 | 0.838 | 0.44 | 245 ms |
-| Hybrid + rerank + query decomposition | 0.776 | 0.908 | 0.947 | 0.841 | 0.50 | 3.1 s |
+| BM25 | 0.729 | **0.949** | 0.966 | 0.824 | **0.78** | 6 ms |
+| Dense (bge-small) | 0.661 | 0.881 | 0.881 | 0.743 | 0.78 | 23 ms |
+| Hybrid (RRF) | 0.695 | 0.949 | **0.983** | 0.807 | 0.67 | 19 ms |
+| BM25 + rerank | 0.797 | 0.932 | 0.983 | 0.866 | 0.78 | 0.5 s |
+| **Hybrid + rerank (default)** | 0.797 | 0.932 | 0.983 | 0.866 | 0.67 | 0.4 s |
+| Hybrid + rerank, 100-word chunks | **0.831** | **0.966** | 0.983 | **0.890** | 0.56 | 0.2 s |
+| Hybrid + rerank, 350-word chunks | 0.797 | 0.915 | 0.949 | 0.852 | 0.67 | 0.3 s |
+| Dense (bge-base) | 0.627 | 0.898 | 0.949 | 0.739 | 0.56 | 19 ms |
+| Hybrid + rerank (bge-base) | 0.797 | 0.932 | 0.966 | 0.864 | 0.67 | 0.3 s |
+| Hybrid + rerank + query decomposition | 0.797 | 0.932 | 0.983 | 0.864 | 0.67 | 0.9 s |
 
-Significance testing used a paired bootstrap with 10,000 resamples against BM25
-(`retrieval_significance.md`):
+Significance testing used a paired bootstrap with 10,000 resamples against BM25 (`retrieval_significance.md`):
 
-- **Hybrid retrieval improves recall: Hit@10 +5.3 pp, 95% CI [+1.3, +10.5].** This is the only
-  significant difference.
-- The cross-encoder reranker moves the right article to rank 1 more often: Hit@1 +6.6 pp, MRR +4.9 pp. These
-  are consistent gains but not significant at n = 76 (the CIs include 0).
-- Smaller chunks look best for precision (Hit@1 0.80), but this is also not significant.
-- The 3x larger bge-base embedder did not beat bge-small.
-- **Weakest point: multi-document questions.** Both gold articles reach the top 10 only ~50% of the time.
+- **Dense-only retrieval is significantly worse than BM25** (Hit@10 −8.5 pp, CI [−15.3, −1.7]),
+  and bge-base doesn't fix it (MRR −8.5 pp, significant). On this news corpus, keyword
+  overlap carries most of the signal. Dense vectors are useful as a complement, not a replacement.
+- The reranker's gain is consistent across every first stage: Hit@1 +6.8 pp over BM25, and +10.2 pp over
+  hybrid without rerank. It is not significant at n = 59.
+- The pre-review run (76 questions) found hybrid's Hit@10 gain significant (+5.3 pp). On the reviewed set
+  BM25 already reaches 0.966, so the gain shrinks to +1.7 pp and is no longer significant. Several of
+  the questions hybrid had "rescued" were bad questions.
+- Query decomposition: no change on any metric, at 2× latency. Details in §4.
 
-## 3. Answers (96 questions; answerer and judge qwen2.5:7b)
+## 3. Answers (75 questions; answerer and judge qwen2.5:7b)
 
-| Metric | Baseline (BM25, prompt v1) | Full (hybrid + rerank, v1) | Full + premise check (v2) |
+| Metric | Baseline (BM25, prompt v1) | Full (hybrid + rerank, v1) | **Full + premise check (v2)** |
 |---|---|---|---|
-| Accuracy (correct) | 0.961 | 0.934 | 0.855 |
-| Accuracy (partial = 0.5) | 0.974 | 0.967 | 0.928 |
-| single / multi accuracy | 0.98 / 0.88 | 0.98 / 0.75 | 0.95 / 0.50 |
+| Accuracy (correct), local judge | 1.000 | 0.949 | 0.898 |
+| single / multi accuracy | 1.00 / 1.00 | 0.98 / 0.78 | 0.96 / 0.56 |
 | False abstention (answerable) | 0.00 | 0.00 | 0.00 |
-| **Correct abstention (unanswerable)** | 0.80 | 0.70 | **0.90** |
+| **Correct abstention (unanswerable)** | 0.875 | 0.812 | **1.000** |
+
+Local-judge accuracy is close to saturation and is lenient (next section), so it can't separate the
+retrievers. The informative numbers are abstention, which the judge scores reliably, and the
+stronger-judge sample below.
 
 ### Is the local judge trustworthy?
 
-30 "full" answers were re-judged by `gemini-3.8-flash` (`scripts/validate_judge.py`):
+30 pre-review "full" answers were re-judged by `gemini-3.8-flash` (`scripts/validate_judge.py`):
 
 | Judgment | Agreement | Cohen's kappa | Verdict |
 |---|---|---|---|
-| declined to answer | 0.97 | 0.87 | reliable: the abstention numbers above stand |
+| declined to answer | 0.97 | 0.87 | reliable: the abstention numbers stand |
 | correctness | 0.83 | 0.44 | lenient: 5 answers it called "correct" Gemini rated "partial" |
 | any unsupported claim | 0.50 | 0.10 | **unreliable** |
 
-On the same 30 answers:
+On those 30 answers:
 
 | | Local judge | Gemini judge |
 |---|---|---|
@@ -86,49 +106,43 @@ On the same 30 answers:
 | Faithfulness (claims supported by cited excerpts) | 0.95 | **0.70** |
 | Answers with ≥ 1 unsupported claim | 0.07 | **0.57** |
 
-So the local-judge accuracy above is an upper bound, and faithfulness must come from the stronger
-judge. Most claims Gemini flags are the 7B answerer's own summarizing statements ("Klarna's
-experience highlights..."), but some are real errors, e.g. a made-up "by 2028" target.
+Most claims Gemini flags are the 7B answerer's own summarizing sentences ("Klarna's experience
+highlights…"), but some are real errors (a made-up "by 2028" target). Faithfulness numbers must come from the
+stronger judge. Gemini re-judging of v2 stopped at 5/30 when the free-tier daily quota ran out.
 
-Gemini re-judging of the v2 configuration stopped at 5/30 when the free-tier daily quota ran out.
-Rerunning `validate_judge.py --config full_premise` after the reset completes it, and cached calls are reused.
-
-## 4. Failure analysis and what changed
+## 4. Failure analysis and iterations
 
 1. **False-premise questions.** v1 answered "How did the 2027 export controls affect Nvidia?" by
-   restating 2023 facts as if they were about 2027. Prompt v2 adds a premise check: if the question's
-   period is later than every excerpt, or the event is never mentioned, it declines. **Correct
-   abstention rose from 0.70 to 0.90, with no false abstentions.**
-2. **The cost of v2 is multi-document questions.** Multi accuracy fell from 0.75 to 0.50. Inspection shows v2 now
-   declines when retrieval found only one of the two needed articles. v1 used to paper over that
-   gap. The root cause is retrieval: see section 2, both docs in top 10 ≈ 50%.
-3. **Ungrounded synthesis.** The 7B answerer adds interpretive sentences that the excerpts don't state.
+   restating 2023 facts as if they were about 2027. Prompt v2 adds a premise check: if the asked-about
+   period is later than every excerpt, or the event is never mentioned, it declines and names the closest
+   related information. **Correct abstention went from 0.81 to 1.00, with no false abstentions.** v2 ships.
+2. **v2's cost is multi-document questions**: accuracy 0.78 → 0.56 on n = 9, i.e. 2 questions. v2 declines
+   when retrieval surfaced only one of the two needed articles, a gap v1 papered over with a
+   one-sided answer. This is the trade-off v2 is meant to make, but it needs a larger multi set to quantify.
+3. **Ungrounded synthesis.** The 7B answerer adds interpretive sentences the excerpts don't state
+   (Gemini faithfulness 0.70). The demo uses Gemini as the answerer.
 4. **Query decomposition: tried, no gain, not shipped.** The LLM splits multi-entity questions into
-   ≤ 3 sub-queries, retrieves for each plus the original question, and interleaves the ranked lists
-   (`RAGPipeline.retrieve(decompose=True)`). Retrieval was identical to the default:
-   - multi "both docs in top 10" stayed at 0.50 (gold docs found per question: 0 → 1, 1 → 7, 2 → 8 in
-     both configs);
-   - Hit@1 0.776 and MRR 0.841, vs 0.839 for the default;
-   - latency rose from 0.24 s to 3.1 s per query.
-
-   Why: of the 7 multi questions missing one article, ~4 retrieved *another article on the same event*
-   (e.g. two outlets covering Google pausing Gemini's image generation), so the answer had equivalent
-   evidence but the doc-level metric counted a miss. The rest have a second half too vague to point at
-   a specific article ("what does this imply about misuse of AI with sensitive data?"). So the multi
-   recall gap is partly a labeling artifact, and decomposition doesn't address it. It stays opt-in.
+   ≤ 3 sub-queries, retrieves for each plus the original, and interleaves the lists
+   (`RAGPipeline.retrieve(decompose=True)`). No retrieval metric changed. On the pre-review set, ~4 of
+   the 7 multi "misses" had retrieved *another article on the same event*. Review relabeled those
+   questions, and multi both-docs@10 for BM25 rose from 0.50 to 0.78. So the original gap was mostly
+   labeling, which decomposition can't fix. It stays opt-in.
+5. **Infrastructure:** Ollama 0.40 on the RTX 5060 sometimes entered a bad state and emitted "8888…"
+   until it aborted with HTTP 500 ("token repeat limit"). The fix was to detect degenerate output, unload the model, and
+   retry. It ran single-threaded.
 
 ## 5. Next steps
 
-- Event-level gold labels for multi questions: accept any article about the same event, e.g. cluster by
-  title embedding + date. This would show the true multi recall.
-- Finish Gemini re-judging for v2. Add a stricter "no uncited sentences" rule and measure faithfulness.
-- Human review of the test set, plus ~10 hand-written hard questions (`eval/testset_manual.jsonl`).
+- A larger, hand-written multi-document and unanswerable set, to break the templates and reach n ≥ 30 per type.
+- Complete the Gemini re-judging of v2 (cached calls resume). Try a "no uncited sentences" rule and
+  measure faithfulness.
+- Try 100-word chunks as the default (best Hit@1 / MRR, not yet significant).
 
 ## Reproduce
 
 ```bash
 python scripts/build_testset.py --provider ollama --single 120 --multi 40 --unanswerable 40
-python scripts/filter_testset.py
+python scripts/filter_testset.py          # draft + review sheet; review decisions live in the CSV
 python scripts/eval_retrieval.py && python scripts/significance.py
 python scripts/eval_answers.py --answer-provider ollama --judge-provider ollama --workers 1
 python scripts/validate_judge.py --config full --n 30 --model gemini-3.8-flash
