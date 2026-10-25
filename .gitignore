@@ -8,3 +8,5 @@ data/index/
 data/cache/
 data/*.log
 eval/*.log
+data/deploy/
+build/
