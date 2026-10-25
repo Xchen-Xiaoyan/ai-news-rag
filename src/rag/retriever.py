@@ -126,6 +126,27 @@ class Retriever:
                 break
         return out
 
+    def search_many(self, queries: list[str], k: int = 8, max_per_doc: int = 2, **kw) -> list[dict]:
+        """Retrieve for each sub-query and interleave the ranked lists (round-robin), so every
+        sub-query gets its best hits into the final top-k instead of one entity crowding out the other."""
+        if len(queries) == 1:
+            return self.search(queries[0], k=k, max_per_doc=max_per_doc, **kw)
+        lists = [self.search(q, k=k, max_per_doc=max_per_doc, **kw) for q in queries]
+        out, seen, per_doc = [], set(), {}
+        for rank in range(k):
+            for hits in lists:
+                if rank >= len(hits):
+                    continue
+                h = hits[rank]
+                if h["chunk_id"] in seen or per_doc.get(h["doc_id"], 0) >= max_per_doc:
+                    continue
+                seen.add(h["chunk_id"])
+                per_doc[h["doc_id"]] = per_doc.get(h["doc_id"], 0) + 1
+                out.append(h)
+                if len(out) == k:
+                    return out
+        return out
+
     def _result(self, i: int, score: float) -> dict:
         c = self.chunks.iloc[i]
         d = self.docs.loc[c.doc_id]

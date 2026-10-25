@@ -45,6 +45,7 @@ Doc-level metrics: the gold article must appear in the top-k results.
 | Hybrid + rerank, 350-word chunks | 0.737 | 0.895 | 0.921 | 0.804 | 0.50 | 274 ms |
 | Dense (bge-base) | 0.605 | 0.868 | 0.908 | 0.709 | 0.38 | 20 ms |
 | Hybrid + rerank (bge-base) | 0.776 | 0.908 | 0.934 | 0.838 | 0.44 | 245 ms |
+| Hybrid + rerank + query decomposition | 0.776 | 0.908 | 0.947 | 0.841 | 0.50 | 3.1 s |
 
 Significance testing used a paired bootstrap with 10,000 resamples against BM25
 (`retrieval_significance.md`):
@@ -102,11 +103,24 @@ Rerunning `validate_judge.py --config full_premise` after the reset completes it
    declines when retrieval found only one of the two needed articles. v1 used to paper over that
    gap. The root cause is retrieval: see section 2, both docs in top 10 ≈ 50%.
 3. **Ungrounded synthesis.** The 7B answerer adds interpretive sentences that the excerpts don't state.
+4. **Query decomposition: tried, no gain, not shipped.** The LLM splits multi-entity questions into
+   ≤ 3 sub-queries, retrieves for each plus the original question, and interleaves the ranked lists
+   (`RAGPipeline.retrieve(decompose=True)`). Retrieval was identical to the default:
+   - multi "both docs in top 10" stayed at 0.50 (gold docs found per question: 0 → 1, 1 → 7, 2 → 8 in
+     both configs);
+   - Hit@1 0.776 and MRR 0.841, vs 0.839 for the default;
+   - latency rose from 0.24 s to 3.1 s per query.
+
+   Why: of the 7 multi questions missing one article, ~4 retrieved *another article on the same event*
+   (e.g. two outlets covering Google pausing Gemini's image generation), so the answer had equivalent
+   evidence but the doc-level metric counted a miss. The rest have a second half too vague to point at
+   a specific article ("what does this imply about misuse of AI with sensitive data?"). So the multi
+   recall gap is partly a labeling artifact, and decomposition doesn't address it. It stays opt-in.
 
 ## 5. Next steps
 
-- Query decomposition for multi-entity questions: split into sub-queries, retrieve for each, and merge.
-  Target: multi "both docs in top 10" from 0.50 toward 0.8, which should recover multi accuracy under v2.
+- Event-level gold labels for multi questions: accept any article about the same event, e.g. cluster by
+  title embedding + date. This would show the true multi recall.
 - Finish Gemini re-judging for v2. Add a stricter "no uncited sentences" rule and measure faithfulness.
 - Human review of the test set, plus ~10 hand-written hard questions (`eval/testset_manual.jsonl`).
 

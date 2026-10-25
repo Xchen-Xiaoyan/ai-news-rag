@@ -24,11 +24,13 @@ from src.rag.llm import get_llm, parse_json
 from src.rag.pipeline import SYSTEM, SYSTEM_V1, RAGPipeline, format_sources
 from src.rag.retriever import Retriever
 
-# name -> (search kwargs, system prompt)
+# name -> (search kwargs, system prompt, query decomposition)
 CONFIGS = {
-    "baseline": (dict(mode="bm25", rerank=False), SYSTEM_V1),
-    "full": (dict(mode="hybrid", rerank=True), SYSTEM_V1),
-    "full_premise": (dict(mode="hybrid", rerank=True), SYSTEM),
+    "baseline": (dict(mode="bm25", rerank=False), SYSTEM_V1, False),
+    "full": (dict(mode="hybrid", rerank=True), SYSTEM_V1, False),
+    "full_premise": (dict(mode="hybrid", rerank=True), SYSTEM, False),
+    # Query decomposition is wired in but excluded by default: it did not change retrieval (REPORT.md §4).
+    "full_premise_decomp": (dict(mode="hybrid", rerank=True), SYSTEM, True),
 }
 
 JUDGE_SYSTEM = "You are a strict, fair evaluator of a question-answering system. Reply with JSON only."
@@ -110,9 +112,9 @@ def main(config_names: list[str], limit: int | None, answer_provider=None, answe
     summaries = {}
     for name in config_names:
         # Retrieval runs serially on the GPU; LLM calls run in parallel threads.
-        search_kw, system = CONFIGS[name]
+        search_kw, system, decompose = CONFIGS[name]
         rag.system = system
-        hits = [retriever.search(q["question"], k=8, **search_kw)
+        hits = [rag.retrieve(q["question"], k=8, decompose=decompose, **search_kw)[1]
                 for q in tqdm(items, desc=f"{name}: retrieve")]
 
         def run(args):
@@ -152,7 +154,7 @@ def main(config_names: list[str], limit: int | None, answer_provider=None, answe
 
 if __name__ == "__main__":
     p = argparse.ArgumentParser()
-    p.add_argument("--configs", nargs="+", default=list(CONFIGS), choices=list(CONFIGS))
+    p.add_argument("--configs", nargs="+", default=["baseline", "full", "full_premise"], choices=list(CONFIGS))
     p.add_argument("--limit", type=int)
     p.add_argument("--answer-provider")
     p.add_argument("--answer-model")

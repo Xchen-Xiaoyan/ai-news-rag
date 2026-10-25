@@ -1,4 +1,6 @@
-"""Retrieval ablation: does the gold article come back, and how high? (No LLM calls.)
+"""Retrieval ablation: does the gold article come back, and how high?
+
+Only the "decomposition" configs call an LLM (to split questions into sub-queries); use --no-llm to skip them.
 
 Writes eval/results/retrieval_summary.csv, retrieval_summary.md and per-question details.
 """
@@ -19,7 +21,7 @@ from src.rag.retriever import Retriever
 
 SMALL, BASE = "BAAI/bge-small-en-v1.5", "BAAI/bge-base-en-v1.5"
 
-# (experiment, variant, embed model, mode, rerank)
+# (experiment, variant, embed model, mode, rerank[, decompose])
 CONFIGS = [
     ("method", "w200", SMALL, "bm25", False),
     ("method", "w200", SMALL, "dense", False),
@@ -31,6 +33,7 @@ CONFIGS = [
     ("chunk size", "w350", SMALL, "hybrid", True),
     ("embedder", "w200", BASE, "dense", False),
     ("embedder", "w200", BASE, "hybrid", True),
+    ("decomposition", "w200", SMALL, "hybrid", True, True),
 ]
 
 
@@ -39,26 +42,40 @@ def available(variant, embed):
     return (index_dir / f"dense_{embed.split('/')[-1]}.npy").exists()
 
 
-def main():
+def main(use_llm: bool = True):
+    rag = None
     items = [q for q in load_testset() if q["type"] != "unanswerable"]
     print(f"{len(items)} answerable questions")
     out_dir = EVAL / "results"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rows, details = [], []
-    groups = dict.fromkeys((v, e) for _, v, e, _, _ in CONFIGS)
+    configs = [c if len(c) == 6 else (*c, False) for c in CONFIGS]
+    if not use_llm:
+        configs = [c for c in configs if not c[5]]
+    groups = dict.fromkeys((c[1], c[2]) for c in configs)
     for variant, embed in groups:
         if not available(variant, embed):
             print(f"skip {variant}/{embed}: index not built")
             continue
         retriever = Retriever(embed_model=embed, variant=variant)
-        for exp, v, e, mode, rerank in CONFIGS:
+        for exp, v, e, mode, rerank, decompose in configs:
             if (v, e) != (variant, embed):
                 continue
-            name = f"{mode}{'+rerank' if rerank else ''} | {v} | {e.split('/')[-1]}"
+            name = f"{mode}{'+rerank' if rerank else ''}{'+decompose' if decompose else ''} | {v} | {e.split('/')[-1]}"
+            if decompose and rag is None:
+                from dotenv import load_dotenv
+                from src.rag.llm import get_llm
+                from src.rag.pipeline import RAGPipeline
+                load_dotenv()
+                rag = RAGPipeline(retriever, get_llm("ollama"))
             per_q, t0 = [], time.time()
             for q in tqdm(items, desc=name, leave=False):
-                hits = retriever.search(q["question"], k=10, mode=mode, rerank=rerank)
+                if decompose:
+                    rag.retriever = retriever
+                    _, hits = rag.retrieve(q["question"], k=10, decompose=True, mode=mode, rerank=rerank)
+                else:
+                    hits = retriever.search(q["question"], k=10, mode=mode, rerank=rerank)
                 ranks = doc_ranks(hits, q["gold_doc_ids"])
                 m = retrieval_metrics(ranks)
                 per_q.append({**m, "type": q["type"]})
@@ -88,4 +105,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(use_llm="--no-llm" not in sys.argv)
