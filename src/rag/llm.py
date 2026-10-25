@@ -23,13 +23,18 @@ class LLM:
 class GeminiLLM(LLM):
     """Google Gemini via the free-tier API key from https://aistudio.google.com/apikey."""
 
-    def __init__(self, model: str | None = None, fallback: str | None = None, retries: int = 3):
+    def __init__(self, model: str | None = None, fallbacks: list[str] | None = None, retries: int = 3):
         from google import genai
         self.model = model or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
-        self.fallback = fallback or os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash")
-        self.retries = retries
+        # Free-tier quotas are per model, so a fallback chain multiplies the daily budget.
+        self.fallbacks = fallbacks or [m.strip() for m in os.getenv(
+            "GEMINI_FALLBACK_MODELS", "gemini-3.5-flash,gemini-3.5-flash-lite").split(",") if m.strip()]
+        self.retries = int(os.getenv("GEMINI_RETRIES", retries))
         self.name = f"gemini/{self.model}"
-        self.client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+        # Retries are handled below; the SDK's own retry loop would multiply the wait.
+        self.client = genai.Client(api_key=os.environ["GEMINI_API_KEY"], http_options=genai.types.HttpOptions(
+            timeout=int(os.getenv("GEMINI_TIMEOUT_MS", "30000")),
+            retry_options=genai.types.HttpRetryOptions(attempts=1)))
 
     def _call(self, model, system, prompt, temperature):
         from google.genai import types
@@ -40,15 +45,21 @@ class GeminiLLM(LLM):
 
     def generate(self, system, prompt, temperature=0.0):
         from google.genai import errors
-        # Free tier returns 503 (overloaded) / 429 (rate limit) often: back off, then try the fallback model.
-        for model in [self.model, self.fallback]:
+        # Free tier returns 503 (overloaded) / 429 (rate limit) often: back off, then try the fallbacks.
+        for model in [self.model, *self.fallbacks]:
             for attempt in range(self.retries):
                 try:
                     return self._call(model, system, prompt, temperature)
                 except errors.APIError as e:
-                    if e.code not in (429, 500, 503):
+                    if e.code not in (429, 500, 503, 504):
                         raise
+                    if e.code == 504 or (e.code == 429 and "quota" in str(e).lower()):
+                        break  # timed out, or this model's daily quota is gone: move to the next model
                     time.sleep(2 ** attempt * 2)
+                except Exception as e:  # noqa: BLE001 - client-side timeouts surface as httpx errors
+                    if "timeout" not in type(e).__name__.lower():
+                        raise
+                    break
         raise RuntimeError("Gemini unavailable after retries on primary and fallback models")
 
 

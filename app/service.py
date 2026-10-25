@@ -26,6 +26,7 @@ EXAMPLES = [
 ]
 
 SNIPPET_CHARS = 320  # the UI shows short excerpts + links, never full articles
+CPU_RERANKER = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 
 def ensure_data():
@@ -68,9 +69,16 @@ class QAService:
 
         device = os.getenv("RAG_DEVICE")  # None -> cuda if available
         t = time.time()
-        # On CPU, rerank fewer candidates to keep latency around a few seconds.
-        self.n_candidates = int(os.getenv("RAG_RERANK_CANDIDATES", "50" if device != "cpu" else "20"))
-        self.retriever = Retriever(device=device)
+        # CPU serving (REPORT.md §6): bge-reranker-base takes ~11 s for 20 pairs on 2 vCPUs, MiniLM-L6
+        # ~1.5 s at -3.4 pp Hit@1. 20 candidates score the same as 50 for both.
+        cpu = device == "cpu"
+        rerank_model = os.getenv("RAG_RERANK_MODEL", CPU_RERANKER if cpu else config.RERANK_MODEL)
+        self.n_candidates = int(os.getenv("RAG_RERANK_CANDIDATES", "20"))
+        if cpu:
+            import torch
+            torch.set_num_threads(int(os.getenv("RAG_THREADS", os.cpu_count() or 2)))
+        self.retriever = Retriever(device=device, rerank_model=rerank_model)
+        self.reranker_name = rerank_model.split("/")[-1]
         llm = get_llm(os.getenv("LLM_PROVIDER", "gemini"), cache=False)
         self.llm = CachedLLM(llm, config.DATA / "cache" / "demo_cache.sqlite")
         self.rag = RAGPipeline(self.retriever, self.llm)

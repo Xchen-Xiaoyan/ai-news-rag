@@ -131,7 +131,23 @@ stronger judge. Gemini re-judging of v2 stopped at 5/30 when the free-tier daily
    until it aborted with HTTP 500 ("token repeat limit"). The fix was to detect degenerate output, unload the model, and
    retry. It ran single-threaded.
 
-## 5. Next steps
+## 5. Serving on a free CPU (2 vCPUs)
+
+Per-stage latency on CPU with 2 threads: BM25 < 1 ms and dense 37 ms. The reranker is everything.
+
+| Reranker (20 candidates unless noted) | Hit@1 | Hit@5 | MRR | Rerank latency (2 vCPU) |
+|---|---|---|---|---|
+| bge-reranker-base, 512 tokens (GPU default) | **0.797** | **0.983** | **0.867** | 10.7 s |
+| bge-reranker-base, 50 candidates | 0.797 | 0.932 | 0.866 | ~27 s |
+| bge-reranker-base truncated to 256 tokens | 0.712 | 0.949 | 0.812 | 6.6 s |
+| bge-reranker-base, 256 tokens, 10 candidates | 0.712 | 0.949 | 0.818 | 3.8 s |
+| **ms-marco-MiniLM-L-6 (CPU default)** | 0.763 | 0.915 | 0.832 | **1.5 s** |
+
+- 20 candidates score as well as 50, so the demo reranks 20. The eval configs above used 50.
+- Truncating passages costs more accuracy than switching to a reranker 12× smaller.
+- The hosted demo uses MiniLM (−3.4 pp Hit@1, still above BM25's 0.729) for about 2.8 s end to end.
+
+## 6. Next steps
 
 - A larger, hand-written multi-document and unanswerable set, to break the templates and reach n ≥ 30 per type.
 - Complete the Gemini re-judging of v2 (cached calls resume). Try a "no uncited sentences" rule and

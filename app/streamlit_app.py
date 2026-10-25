@@ -30,7 +30,7 @@ with st.sidebar:
     st.divider()
     st.caption(f"{svc.n_docs:,} articles · {svc.n_chunks:,} chunks · answers by {svc.llm.name}")
     st.caption(f"LLM calls left today: {svc.budget.limit - svc.budget.used}")
-    st.caption("Hybrid BM25 + bge-small retrieval, bge cross-encoder rerank. See eval/REPORT.md for metrics.")
+    st.caption(f"Hybrid BM25 + bge-small retrieval, {svc.reranker_name} rerank. See eval/REPORT.md for metrics.")
 
 st.title("📰 AI Industry News — Ask with Citations")
 st.write("Ask how AI is affecting an industry. Answers cite the news excerpts they come from, and the "

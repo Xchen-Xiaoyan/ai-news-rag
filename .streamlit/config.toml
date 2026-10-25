@@ -1,0 +1,10 @@
+[server]
+# The default watcher walks every transformers submodule (slow, noisy torchvision errors).
+fileWatcherType = "none"
+headless = true
+
+[browser]
+gatherUsageStats = false
+
+[theme]
+base = "light"
