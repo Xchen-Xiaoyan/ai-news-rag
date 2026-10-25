@@ -21,6 +21,18 @@ CHUNK_MAX_WORDS = 300
 CHUNK_OVERLAP_SENTENCES = 1
 MIN_CHUNK_WORDS = 40
 
+# Chunking variants for the ablation: name -> (target words, max words). "w200" is the default
+# and lives at CHUNKS / INDEX; the others are built by scripts/build_variant.py.
+CHUNK_VARIANTS = {"w100": (100, 150), "w200": (200, 300), "w350": (350, 400)}
+DEFAULT_VARIANT = "w200"
+
+
+def variant_paths(variant: str = DEFAULT_VARIANT) -> tuple[Path, Path]:
+    if variant == DEFAULT_VARIANT:
+        return CHUNKS, INDEX
+    return PROCESSED / f"chunks_{variant}.parquet", INDEX / variant
+
+
 EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 RERANK_MODEL = "BAAI/bge-reranker-base"
 # bge models expect this instruction prefix on queries (not on passages)

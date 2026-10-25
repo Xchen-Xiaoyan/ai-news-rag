@@ -1,0 +1,6 @@
+id,type,local_correctness,strong_correctness,local_declined,strong_declined,local_hallucinated,strong_hallucinated,local_claims,local_supported,strong_claims,strong_supported,strong_unsupported
+q023,single,correct,correct,False,False,True,True,4,3,3,2,The FTC claimed that Air AI misled small business owners and entrepreneurs with exaggerated claims about the tool's capabilities and financial benefits.
+q008,single,correct,correct,False,False,False,True,1,1,2,1,"The Dream Track experiment on YouTube Shorts allows creators to generate 30-second songs sung in the voices of popular artists like Alec Benjamin, Charlie Puth, and Sia."
+q048,single,correct,incorrect,False,False,False,False,5,5,10,10,
+q002,single,correct,correct,False,False,False,True,4,4,4,2,Klarna reversed its strategy due to quality issues in customer service. || Klarna is now rehiring humans to restore service quality and balance the human touch with AI's efficiency.
+q066,multi,partial,incorrect,False,True,False,True,1,1,3,1,The corpus does not contain enough information to answer the question regarding Nutshell's Shellbot. || The excerpts do not provide specific details or comparisons regarding Nutshell's Shellbot.

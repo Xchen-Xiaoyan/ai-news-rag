@@ -1,0 +1,31 @@
+id,type,local_correctness,strong_correctness,local_declined,strong_declined,local_hallucinated,strong_hallucinated,local_claims,local_supported,strong_claims,strong_supported,strong_unsupported
+q023,single,correct,correct,False,False,False,False,5,5,3,3,
+q008,single,correct,correct,False,False,False,False,2,2,4,4,
+q011,single,correct,partial,False,False,False,True,3,3,2,1,"These modifications responded to the Irish Data Protection Commission's detailed list of questions seeking more information about Bard's data privacy policies, which had delayed the planned June launch in the EU."
+q007,single,correct,correct,False,False,False,False,3,3,4,4,
+q048,single,correct,incorrect,False,False,False,True,4,4,9,5,"Azure AI Foundry offers governance features across different products like Power Automate. || New governance capabilities were introduced to help developers understand how to build multimodal AI apps, though a central governance hub is not yet available. || Microsoft announced the development of custom silicon, specifically AI-optimized virtual machines like the Azure ND GB200 V6 VM. || These features are enhancing the AI development lifecycle and improving productivity across various industries by providing tools for data analysis, model building, and deployment."
+q013,single,correct,correct,False,False,False,True,5,5,8,6,"Klarna's experience highlights challenges and lessons in balancing AI and human workers in customer service. || Klarna's pivot indicates that while AI can handle routine tasks, it falls short in situations requiring empathy and deeper understanding."
+q001,single,correct,partial,False,False,False,True,5,5,6,3,"Lambda Labs and DDN claim their solutions offer performance advantages over alternative GPU cloud platforms. || High-throughput capabilities are crucial for accelerating AI and machine learning workloads. || Lambda Labs, in partnership with DDN, aims to provide faster and more efficient results for generative AI and LLM deployments."
+q088,unanswerable,correct,correct,True,True,False,False,0,0,0,0,
+q091,unanswerable,incorrect,incorrect,False,False,True,True,2,1,7,3,"Lenovo's Intelligent Devices Group (IDG) generates about 80% of the company's revenue. || By 2028, Lenovo aims to leverage its AI-driven smart devices to contribute significantly to a market share increase in the global PC market. || Lenovo expects AI-enabled devices to drive sales uplift and contribute to a 25% market share increase in the global PC market by integrating AI throughout the device lifecycle. || The specific AI-enhanced device expected to lead this growth is the AI PC."
+q054,single,correct,correct,False,False,False,True,3,3,3,2,"A freezing order worth £65 million was obtained against Pragnesh Modhwadia, the former managing partner of the London law firm Axiom Ince."
+q016,single,correct,correct,False,False,False,False,2,2,4,4,
+q063,multi,correct,correct,False,False,False,True,2,2,8,7,"To prevent similar issues in the future, Google mobilized its engineering teams to refine model parameters and introduced a patch expected to roll out within weeks."
+q052,single,correct,correct,False,False,False,True,1,1,2,1,This programming led to discriminatory practices against older workers in violation of the Age Discrimination in Employment Act (ADEA).
+q041,single,correct,correct,False,False,False,True,4,4,5,3,"Penlink’s latest product, CoAnalyst with Agentic AI, aims to significantly enhance workflow efficiency and risk mitigation in digital investigations. || CoAnalyst offers features such as automated workflows, continuous insights through advanced analytics, and dynamic alerts for proactive summaries of emerging risks."
+q078,unanswerable,correct,correct,True,True,False,False,0,0,0,0,
+q002,single,correct,correct,False,False,False,True,4,4,4,3,Klarna reversed its strategy and began rebuilding its human customer support workforce after heavily relying on artificial intelligence due to quality issues and customer dissatisfaction.
+q047,single,correct,correct,False,False,False,False,4,4,4,4,
+q084,unanswerable,correct,correct,True,True,False,False,0,0,0,0,
+q076,unanswerable,incorrect,incorrect,False,False,True,True,5,2,9,5,"The partnership between Simmons & Simmons and Flank LawTech has significantly impacted the legal industry's adoption of autonomous AI agents. || By 2028, one quarter of knowledge workers use AI at work. || Simmons & Simmons developed several specialized agents post-2026. || By 2028, these advancements have likely contributed to a broader adoption of autonomous AI in contract management across the legal industry."
+q066,multi,partial,incorrect,False,True,False,True,1,1,1,0,The provided excerpts focus on general concerns about AI chatbots in financial services but do not mention Nutshell's Shellbot specifically.
+q019,single,correct,correct,False,False,False,False,2,2,1,1,
+q006,single,correct,correct,False,False,False,False,3,3,3,3,
+q024,single,correct,partial,False,False,False,True,1,1,1,0,"According to SentiLink Head of Alliances Development Vivek Ahuja, 15% of synthetic identities specifically target credit unions."
+q010,single,correct,correct,False,False,False,True,3,3,6,5,"Integrail plans to use its investment capital to expand its agentic AI platform, AI Studio, and develop more services and training."
+q059,single,correct,correct,False,False,False,False,1,1,1,1,
+q030,single,correct,correct,False,False,False,True,1,1,2,1,"According to TSMC's plans, the next-generation Dojo chip entering production in 2024 will deliver much greater power than current systems."
+q022,single,correct,correct,False,False,False,False,3,3,3,3,
+q029,single,correct,correct,False,False,False,True,1,1,2,1,Seattle Public Schools banned the use of ChatGPT among students due to concerns about cheating and its potential negative impact on learning.
+q080,unanswerable,correct,correct,True,True,False,False,0,0,0,0,
+q037,single,correct,correct,False,False,False,True,4,4,5,2,"Mercedes-Benz has partnered with Microsoft to integrate ChatGPT into its MBUX voice assistant. || The expected outcome includes engaging in dynamic, conversational interactions similar to ChatGPT's Advanced Voice Mode. || This integration is part of an ongoing beta program starting on June 16, 2023, in the US, targeting over 900,000 vehicles equipped with MBUX."

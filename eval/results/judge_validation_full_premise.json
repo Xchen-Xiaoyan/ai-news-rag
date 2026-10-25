@@ -1,0 +1,16 @@
+{
+ "n": 5,
+ "strong judge": "gemini/gemini-3.8-flash",
+ "correctness agreement": 0.6,
+ "correctness kappa": 0.231,
+ "declined agreement": 0.8,
+ "declined kappa": 0.0,
+ "hallucinated agreement": 0.4,
+ "hallucinated kappa": 0.118,
+ "local faithfulness (claims supported)": 0.933,
+ "local hallucination rate": 0.2,
+ "strong faithfulness (claims supported)": 0.727,
+ "strong hallucination rate": 0.8,
+ "strong accuracy (correct)": 0.6,
+ "local accuracy (correct)": 0.8
+}

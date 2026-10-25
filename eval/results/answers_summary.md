@@ -1,0 +1,14 @@
+Answerer: ollama/qwen2.5:7b | Judge: ollama/qwen2.5:7b
+
+|                                            |   baseline |   full |   full_premise |
+|:-------------------------------------------|-----------:|-------:|---------------:|
+| n                                          |     96     | 96     |         96     |
+| accuracy (correct)                         |      0.961 |  0.934 |          0.855 |
+| accuracy (partial=0.5)                     |      0.974 |  0.967 |          0.928 |
+| faithfulness (claims supported)            |      0.976 |  0.986 |          0.95  |
+| hallucination rate (>=1 unsupported claim) |      0.066 |  0.039 |          0.132 |
+| false abstention (answerable)              |      0     |  0     |          0     |
+| correct abstention (unanswerable)          |      0.8   |  0.7   |          0.9   |
+| single acc                                 |      0.983 |  0.983 |          0.95  |
+| multi acc                                  |      0.875 |  0.75  |          0.5   |
+| errors                                     |      0     |  0     |          0     |

@@ -28,18 +28,22 @@ def rrf(rankings: list[np.ndarray], k: int = 60) -> dict[int, float]:
 
 class Retriever:
     def __init__(self, embed_model: str = config.EMBED_MODEL,
-                 rerank_model: str | None = config.RERANK_MODEL, device: str | None = None):
+                 rerank_model: str | None = config.RERANK_MODEL, device: str | None = None,
+                 variant: str = config.DEFAULT_VARIANT):
         from sentence_transformers import CrossEncoder, SentenceTransformer
 
+        chunks_path, index_dir = config.variant_paths(variant)
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.docs = pd.read_parquet(config.DOCS).set_index("doc_id")
-        self.chunks = pd.read_parquet(config.CHUNKS)
+        self.docs = pd.read_parquet(config.DOCS, columns=[
+            "doc_id", "url", "date", "title", "source", "in_high_conf", "industries", "sentiment",
+        ]).set_index("doc_id")
+        self.chunks = pd.read_parquet(chunks_path)
         self.passages = passage_text(self.chunks, self.docs.reset_index())
         self.chunk_doc = self.chunks.doc_id.to_numpy()
 
-        self.bm25 = load_bm25(config.INDEX)
+        self.bm25 = load_bm25(index_dir)
         dtype = torch.float16 if self.device == "cuda" else torch.float32
-        self.dense = torch.from_numpy(load_dense(config.INDEX, embed_model)).to(self.device, dtype)
+        self.dense = torch.from_numpy(load_dense(index_dir, embed_model)).to(self.device, dtype)
         self.encoder = SentenceTransformer(embed_model, device=self.device)
         self.reranker = CrossEncoder(rerank_model, device=self.device, max_length=512) if rerank_model else None
         if self.device == "cuda":
