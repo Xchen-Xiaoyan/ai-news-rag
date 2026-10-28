@@ -4,7 +4,7 @@
 
 ## English
 
-**AI Industry News RAG: cited Q&A over 33k news articles** · Python, PyTorch, sentence-transformers, BM25, FastAPI, Streamlit, Ollama, Gemini
+**AI Industry News RAG: cited Q&A over 33k news articles** · [live demo](https://ai-news-rag.streamlit.app) · [code](https://github.com/Xchen-Xiaoyan/ai-news-rag) · Python, PyTorch, sentence-transformers, BM25, FastAPI, Streamlit, Ollama, Gemini
 
 - Built a retrieval-augmented QA system on a 135k-article AI-news corpus. Wrote sentence-level boilerplate
   removal and syndication dedup to reach 33k articles and 188k chunks, then built a hybrid BM25 + dense retriever with a
@@ -21,19 +21,19 @@
   missed most unsupported claims (κ 0.10; 7% vs 57% hallucination rate), so faithfulness is reported from the
   stronger judge only.
 - Shipped a $0 demo with FastAPI + Streamlit: cached LLM calls, a per-model free-tier fallback chain, a daily
-  budget, and retrieval-only degradation. Cut CPU latency from ~11 s to 2.8 s by swapping the reranker
+  budget, and retrieval-only degradation. Cut CPU rerank latency from ~11 s to 1.5 s by swapping the reranker
   after measuring the accuracy trade-off.
 
 ## 中文
 
-**AI 行业新闻 RAG 问答系统（带引用）**｜Python、PyTorch、BM25、sentence-transformers、FastAPI、Streamlit
+**AI 行业新闻 RAG 问答系统（带引用）**｜[在线 demo](https://ai-news-rag.streamlit.app) · [代码](https://github.com/Xchen-Xiaoyan/ai-news-rag)｜Python、PyTorch、BM25、sentence-transformers、FastAPI、Streamlit
 
 - 基于 13.5 万篇 AI 新闻语料构建 RAG 问答系统：句子级网页去噪 + 转载去重 → 3.3 万篇 / 18.8 万 chunk；BM25 + 向量混合检索 + 交叉编码器重排，Hit@1 0.80、Hit@10 0.98
 - 设计评测体系：单文档 / 跨文档 / 无法回答三类问题，LLM 生成候选题后经规则、LLM 评审、检索反证三道质检（207 → 75 题）；对检索方式、chunk 大小、向量模型、重排模型做消融，并用配对 bootstrap 给出置信区间
 - 发现纯向量检索在新闻语料上显著差于 BM25（Hit@10 −8.5pp，95% CI [−15.3, −1.7]）；重排序使 Hit@1 提升 7–10pp；问题分解无增益，因而未上线
 - 定位"错误前提"类幻觉（如"2027 年出口管制如何…"），加入前提校验后正确拒答率 81% → 100%，误拒率为 0
 - 用更强模型校验本地 7B 裁判：拒答判断可靠（κ 0.87），幻觉判断严重偏松（κ 0.10；7% vs 57%），因此只采用强裁判的忠实度结果
-- 零成本上线 demo：LLM 调用缓存、按模型的免费额度降级链、每日调用上限、LLM 不可用时退化为只展示检索结果；量化精度代价后更换重排模型，CPU 端到端延迟从约 11 秒降到 2.8 秒
+- 零成本上线 demo：LLM 调用缓存、按模型的免费额度降级链、每日调用上限、LLM 不可用时退化为只展示检索结果；量化精度代价后更换重排模型，CPU 重排延迟从约 11 秒降到 1.5 秒
 
 ## 面试时可以讲的故事（STAR）
 

@@ -6,7 +6,9 @@ Ask how AI is changing an industry and get an answer **with citations** from 33,
 This project extends an NLP topic-modeling project, BERTopic over 135k AI news articles, into a
 question-answering system. It is built and evaluated at **$0**: local GPU models plus a free-tier LLM.
 
-![demo](docs/demo.jpg)
+**▶ Live demo: https://ai-news-rag.streamlit.app** (free hosting. If it has been idle, the first visit wakes it, which takes about 2 minutes.)
+
+![demo](docs/demo.png)
 
 ## Highlights
 
