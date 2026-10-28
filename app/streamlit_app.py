@@ -8,6 +8,9 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.service import EXAMPLES, get_service  # noqa: E402
 
+REPO = "https://github.com/Xchen-Xiaoyan/ai-news-rag"
+REPO_SHORT = "github.com/Xchen-Xiaoyan/ai-news-rag"
+
 st.set_page_config(page_title="AI Industry News Q&A", page_icon="📰", layout="centered",
                    initial_sidebar_state="collapsed")
 st.markdown("""<style>
@@ -116,5 +119,7 @@ with st.expander("How it works"):
 3. **Chinese questions** are translated into an English search query first; the answer stays in Chinese.
 
 Evaluated on a 75-question test set. Hit@1 is 0.80 and abstention on unanswerable questions is 100%;
-the full report is in `eval/REPORT.md`. LLM calls left today: {svc.budget.limit - svc.budget.used}.
+see the [evaluation report]({REPO}/blob/main/eval/REPORT.md). LLM calls left today: {svc.budget.limit - svc.budget.used}.
+
+Code: [{REPO_SHORT}]({REPO})
 """)
