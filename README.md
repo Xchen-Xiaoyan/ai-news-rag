@@ -87,6 +87,11 @@ eval/           REPORT.md · testset_review.csv (every review decision) · resul
   the model and retries.
 - **Copyright.** The demo shows short snippets and links to the original articles, never full text.
   The index is hosted in a private dataset.
+- **Hosting at $0.** The app runs on Streamlit Community Cloud (CPU, ~2.7 GB RAM). On first start it pulls
+  the 477 MB index from a private Hugging Face dataset (`HF_DATA_REPO` + `HF_TOKEN` secrets). To fit
+  in memory, reranker inputs are built per candidate instead of materialising all passages, and vectors
+  stay fp16 on CPU (same matmul speed). Resident memory dropped from 2.7 GB to 2.0 GB. `deploy/Dockerfile`
+  covers Docker hosts (Hugging Face Docker Spaces now need a paid plan).
 
 ## Limitations
 

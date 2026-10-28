@@ -3,9 +3,8 @@ title: AI Industry News RAG
 emoji: 📰
 colorFrom: blue
 colorTo: indigo
-sdk: streamlit
-app_file: app/streamlit_app.py
-python_version: "3.12"
+sdk: docker
+app_port: 7860
 pinned: false
 short_description: Cited answers about AI's impact on industries (33k articles)
 ---

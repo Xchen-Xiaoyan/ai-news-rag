@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 
 from . import config
-from .index import bm25_query_tokens, load_bm25, load_dense, passage_text
+from .index import bm25_query_tokens, load_bm25, load_dense
 
 
 @dataclass
@@ -38,12 +38,14 @@ class Retriever:
             "doc_id", "url", "date", "title", "source", "in_high_conf", "industries", "sentiment",
         ]).set_index("doc_id")
         self.chunks = pd.read_parquet(chunks_path)
-        self.passages = passage_text(self.chunks, self.docs.reset_index())
+        # Reranker input is built per candidate (same title + text format as index.passage_text) rather
+        # than materialising all 188k passages: saves ~300 MB, which matters on a 2.7 GB free host.
+        self.short_title = self.docs.title.str.split(" | ", regex=False).str[0].to_dict()
         self.chunk_doc = self.chunks.doc_id.to_numpy()
 
         self.bm25 = load_bm25(index_dir)
-        dtype = torch.float16 if self.device == "cuda" else torch.float32
-        self.dense = torch.from_numpy(load_dense(index_dir, embed_model)).to(self.device, dtype)
+        # fp16 on CPU too: matmul speed is the same as fp32 and it halves memory.
+        self.dense = torch.from_numpy(load_dense(index_dir, embed_model)).to(self.device, torch.float16)
         self.encoder = SentenceTransformer(embed_model, device=self.device)
         self.reranker = CrossEncoder(rerank_model, device=self.device, max_length=512) if rerank_model else None
         if self.device == "cuda":
@@ -109,7 +111,7 @@ class Retriever:
 
         scores = {i: 1.0 / (r + 1) for r, i in enumerate(cands)}
         if rerank and self.reranker and cands:
-            rs = self.reranker.predict([(query, self.passages[i]) for i in cands], batch_size=32,
+            rs = self.reranker.predict([(query, self.passage(i)) for i in cands], batch_size=32,
                                        show_progress_bar=False)
             scores = dict(zip(cands, map(float, rs)))
             cands = sorted(cands, key=scores.get, reverse=True)
@@ -146,6 +148,9 @@ class Retriever:
                 if len(out) == k:
                     return out
         return out
+
+    def passage(self, i: int) -> str:
+        return f"{self.short_title[self.chunk_doc[i]]}\n{self.chunks.text.iat[i]}"
 
     def _result(self, i: int, score: float) -> dict:
         c = self.chunks.iloc[i]

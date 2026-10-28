@@ -1,7 +1,7 @@
 """Assemble the Hugging Face Space folder (code only; data comes from the private dataset at runtime).
 
   python scripts/make_space.py
-  huggingface-cli upload <user>/ai-news-rag build/space . --repo-type space
+  hf upload <user>/ai-news-rag build/space . --repo-type space   (Docker Space)
 """
 import shutil
 from pathlib import Path
@@ -20,6 +20,7 @@ def main():
     shutil.copytree(ROOT / ".streamlit", OUT / ".streamlit")
     shutil.copy(ROOT / "deploy" / "requirements.txt", OUT / "requirements.txt")
     shutil.copy(ROOT / "deploy" / "SPACE_README.md", OUT / "README.md")
+    shutil.copy(ROOT / "deploy" / "Dockerfile", OUT / "Dockerfile")
     print("\n".join(str(p.relative_to(OUT)) for p in sorted(OUT.rglob("*")) if p.is_file()))
 
 
